@@ -10,7 +10,7 @@ export default function Navbar() {
   const isAdmin = userRole === 'admin';
 
   return (
-    <nav className="font-bold px-4 py-3 flex justify-between items-center border-b bg-teal-700 backdrop-blur-md">
+    <nav className="font-bold text-white px-4 py-3 flex justify-between items-center border-b bg-teal-700 backdrop-blur-md">
       {/* Admin icon - far left */}
       {isAdmin && (
         <div className="relative group">
