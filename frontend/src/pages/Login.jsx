@@ -5,14 +5,68 @@ export default function Login() {
   const [userType, setUserType] = useState('user');
   const [authMode, setAuthMode] = useState('login');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [username, setUsername] = useState('');
   const [error, setError] = useState('');
 
   const handleUserTypeChange = (type) => {
     setUserType(type);
     if (type === 'admin') setAuthMode('login');
+  };
+
+  const handleSubmit = async () => {
+    setError('');
+
+    if (authMode === 'signup' && password !== confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
+
+    const endpoint = authMode === 'login'
+      ? 'http://localhost:3001/auth/login'
+      : 'http://localhost:3001/auth/signup';
+
+    const payload = authMode === 'login'
+      ? { email, password }
+      : { email, password, username };
+
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        if (authMode === 'signup') {
+          setAuthMode('login');
+          setPassword('');
+          setConfirmPassword('');
+          setError('');
+        } else {
+          localStorage.clear();
+          localStorage.setItem('userRole', data.role);
+          localStorage.setItem('userId', data.user.id);
+          localStorage.setItem('userName', data.user.name);
+          localStorage.setItem('userPicture', data.user.picture || '');
+
+          if (data.role === 'admin') {
+            window.location.href = '/admin';
+          } else {
+            window.location.href = '/student';
+          }
+        }
+      } else {
+        setError(data.message || 'Something went wrong.');
+      }
+    } catch (err) {
+      setError('Cannot connect to server. Is the backend running?');
+    }
   };
 
   return (
@@ -28,12 +82,12 @@ export default function Login() {
             </h2>
             <p className="text-sm" style={{ color: '#E6FEF2' }}>
               {userType === 'admin'
-                ? 'Enter your credentials to manage schedules'
+                ? 'Enter your credentials'
                 : (authMode === 'login' ? 'Sign in to access your schedule' : 'Create an account to get started')}
             </p>
           </div>
 
-          {/* User/Admin Toggle */}
+          {/* Toggle */}
           <div className="flex border-b border-gray-100">
             <button
               onClick={() => handleUserTypeChange('user')}
@@ -55,7 +109,7 @@ export default function Login() {
           <div className="p-8 space-y-6">
             <div className="space-y-4">
 
-              {/* Username (signup only) */}
+              {/* Username */}
               {authMode === 'signup' && (
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -80,7 +134,7 @@ export default function Login() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder={userType === 'admin' ? 'Admin ID' : 'Email Address'}
+                  placeholder={userType === 'admin' ? 'Admin Email' : 'Email Address'}
                   className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl bg-gray-50 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent transition-all duration-200"
                 />
               </div>
@@ -104,11 +158,36 @@ export default function Login() {
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
               </div>
+
+              {/* Confirm Password */}
+              {authMode === 'signup' && (
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Lock className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    type={showConfirm ? 'text' : 'password'}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Confirm Password"
+                    className={`block w-full pl-10 pr-10 py-3 border rounded-xl bg-gray-50 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent transition-all duration-200
+                      ${confirmPassword && password !== confirmPassword ? 'border-red-400' : 'border-gray-200'}`}
+                  />
+                  <button
+                    onClick={() => setShowConfirm(!showConfirm)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-green-600 transition-colors cursor-pointer"
+                  >
+                    {showConfirm ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
+                  {confirmPassword && password !== confirmPassword && (
+                    <p className="text-red-500 text-xs mt-1">Passwords do not match.</p>
+                  )}
+                </div>
+              )}
             </div>
 
             {error && <p className="text-red-500 text-sm text-center font-medium">{error}</p>}
 
-            {/* Create account / Forgot password */}
             <div className="flex items-center justify-between text-sm">
               {userType === 'user' && (
                 <button
@@ -123,10 +202,10 @@ export default function Login() {
               </a>
             </div>
 
-            {/* Submit */}
             <button
+              onClick={handleSubmit}
               className="w-full py-3.5 px-4 text-sm font-semibold rounded-xl text-white transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
-              style={{ backgroundColor: '#04CD69' }}
+              style={{ backgroundColor: '#03A07B' }}
             >
               {authMode === 'login' ? 'Sign In' : 'Create Account'}
             </button>

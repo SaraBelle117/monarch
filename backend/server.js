@@ -100,65 +100,6 @@ app.post('/api/upload', upload.single('image'), (req, res) => {
   res.json({ success: true, url: `http://localhost:${PORT}/uploads/${req.file.filename}` });
 });
 
-/* INSTRUMENTS */
-
-app.get('/api/instruments', async (req, res) => {
-  try {
-    const [results] = await db.query('SELECT * FROM instruments ORDER BY name');
-    res.json(results);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-/* LESSONS */
-
-app.get('/api/users/:id/lessons', async (req, res) => {
-  try {
-    const [results] = await db.query(
-      `SELECT l.*, u.username as teacherName 
-       FROM lessons l
-       LEFT JOIN users u ON l.teacherId = u.id
-       WHERE l.studentId = ?
-       ORDER BY l.scheduledAt DESC`,
-      [req.params.id]
-    );
-    res.json(results);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-/* LESSON REQUESTS */
-
-app.get('/api/users/:id/lesson-requests', async (req, res) => {
-  try {
-    const [results] = await db.query(
-      'SELECT * FROM lesson_requests WHERE studentId = ? ORDER BY createdAt DESC',
-      [req.params.id]
-    );
-    res.json(results);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post('/api/lesson-requests', async (req, res) => {
-  const { studentId, instrument, campus, preferredTime, reason } = req.body;
-  if (!studentId || !instrument || !campus) {
-    return res.status(400).json({ message: 'Student, instrument, and campus are required' });
-  }
-  try {
-    const [result] = await db.query(
-      'INSERT INTO lesson_requests (studentId, instrument, campus, preferredTime, reason) VALUES (?, ?, ?, ?, ?)',
-      [studentId, instrument, campus, preferredTime || null, reason || null]
-    );
-    res.json({ success: true, id: result.insertId });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
 /* START */
 
 app.listen(PORT, () => console.log(`Backend running at http://localhost:${PORT}`));
